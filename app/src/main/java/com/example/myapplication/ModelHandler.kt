@@ -170,7 +170,10 @@ class ModelHandler(private val context: Context) {
             loadAndComputeEmbeddings("diseases_english.json", diseasesEnglish)
             onProgress("Computing embeddings for Bengali diseases...")
             loadAndComputeEmbeddings("diseases_bengali.json", diseasesBengali)
-            Log.d("ModelHandler", "Embeddings computed: ${diseasesEnglish.size} English, ${diseasesBengali.size} Bengali diseases")
+            Log.d(
+                "ModelHandler",
+                "Embeddings computed: ${diseasesEnglish.size} English, ${diseasesBengali.size} Bengali diseases"
+            )
 
             true
         } catch (e: Exception) {
@@ -189,12 +192,14 @@ class ModelHandler(private val context: Context) {
             for (i in 0 until jsonArray.length()) {
                 val disease = jsonArray.getJSONObject(i)
                 // Combine fields for embedding
-                val textToEmbed = "${disease.getString("name")} ${disease.getString("description")} ${
-                    disease.getJSONArray("symptoms").join(", ")
-                }"
+                val textToEmbed =
+                    "${disease.getString("name")} ${disease.getString("description")} ${
+                        disease.getJSONArray("symptoms").join(", ")
+                    }"
                 // Compute embedding
                 val embeddingResult = textEmbedder?.embed(textToEmbed)
-                val embedding = embeddingResult?.embeddingResult()?.embeddings()?.first() // FloatArray of size 384
+                val embedding = embeddingResult?.embeddingResult()?.embeddings()
+                    ?.first() // FloatArray of size 384
                 if (embedding != null) {
                     disease.put("embedding", embedding)
                     diseaseList.add(disease)
@@ -215,28 +220,64 @@ class ModelHandler(private val context: Context) {
         try {
             // Compute prompt embedding
             val promptEmbeddingResult = textEmbedder?.embed(prompt)
-            val promptEmbedding = promptEmbeddingResult?.embeddingResult()?.embeddings()?.first() ?: return null
+            val promptEmbedding =
+                promptEmbeddingResult?.embeddingResult()?.embeddings()?.first() ?: return null
 
             // Find matching diseases
             val matchedDiseases = mutableListOf<JSONObject>()
             val languages = listOf("English" to diseasesEnglish, "Bengali" to diseasesBengali)
 
+            val scoredDiseases =
+                mutableListOf<Triple<String, JSONObject, Double>>() // language, disease, similarity
+
+            // Step 1: Compute similarities for all diseases
             for ((language, diseaseList) in languages) {
                 for (disease in diseaseList) {
-                    val diseaseEmbedding: Any = disease.get("embedding")
-                    val similarity = TextEmbedder.cosineSimilarity(promptEmbedding,
+                    val diseaseEmbedding = disease.get("embedding")
+                    val similarity = TextEmbedder.cosineSimilarity(
+                        promptEmbedding,
                         diseaseEmbedding as Embedding?
                     )
-                    if (similarity > 0.5) {
-                        matchedDiseases.add(disease)
-                        Log.d("ModelHandler", "Matched [$language]: ${disease.getString("name")} (Similarity: $similarity)")
-                    }
+
+                    scoredDiseases.add(Triple(language, disease, similarity))
                 }
             }
 
+            // Step 2: Sort by similarity in descending order and take top 2
+            val topMatches = scoredDiseases
+                .filter { it.third > 0.5f } // optional threshold
+                .sortedByDescending { it.third }
+                .take(2)
+
+            // Step 3: Add to matchedDiseases and log
+            for ((language, disease, similarity) in topMatches) {
+                matchedDiseases.add(disease)
+                Log.d(
+                    "ModelHandler",
+                    "Matched [$language]: ${disease.getString("name")} (Similarity: $similarity)"
+                )
+            }
+
+
+            val systemPrompt = """
+You are MediGemm, an expert medical assistant with extensive knowledge in diseases, symptoms, treatments, medicines, and home remedies. 
+Only answer questions strictly related to medical topics.
+
+If a user asks anything outside the medical domain, politely respond with:
+"I’m sorry, I cannot answer this question as it is outside my domain of expertise."
+
+If a list of relevant diseases is provided along with the user query, use it **only if it matches the user's query context**. 
+If there's no clear match between the query and the diseases, ignore the provided list and generate a medically accurate response based on your own expertise.
+
+Regardless of whether the disease list is used or not, your final answer should follow the structure of the diseases.
+Always include at home remedies/treatment for the identified disease.
+""".trimIndent()
+
+
             // Create augmented prompt
             val appendedPrompt = buildString {
-                append(prompt)
+                append(systemPrompt + "\n")
+                append(prompt + "\n")
                 if (matchedDiseases.isNotEmpty()) {
                     append("\n\nRelevant Diseases:\n")
                     for (disease in matchedDiseases) {
@@ -244,7 +285,11 @@ class ModelHandler(private val context: Context) {
                         append("  Symptoms: ${disease.getJSONArray("symptoms").join(", ")}\n")
                         append("  Management: ${disease.getString("management")}\n")
                         append("  Medicines: ${disease.getJSONArray("medicines").join(", ")}\n")
-                        append("  Home Remedies: ${disease.getJSONArray("home_remedies").join(", ")}\n")
+                        append(
+                            "  Home Remedies: ${
+                                disease.getJSONArray("home_remedies").join(", ")
+                            }\n"
+                        )
                     }
                 }
             }
@@ -252,28 +297,33 @@ class ModelHandler(private val context: Context) {
             // Generate response with Gemma
             val enableVision = imageBitmap != null
             val sessionOptions = LlmInferenceSession.LlmInferenceSessionOptions.builder()
-                .setTopK(10)
-                .setTemperature(0.4f)
-                .setGraphOptions(GraphOptions.builder().setEnableVisionModality(enableVision).build())
+                .setTopK(5)
+                .setTemperature(0.7f)
+                .setGraphOptions(
+                    GraphOptions.builder()
+                        .setEnableVisionModality(enableVision)
+                        .build()
+                )
                 .build()
 
-            return LlmInferenceSession.createFromOptions(llmInference!!, sessionOptions).use { session ->
-                session.addQueryChunk(appendedPrompt)
-                if (enableVision) {
-                    try {
-                        val resizedImage = resizeToSupportedSize(imageBitmap!!)
-                        val mpImage: MPImage = BitmapImageBuilder(resizedImage).build()
-                        session.addImage(mpImage)
-                        Log.d("ModelHandler", "Image added successfully")
-                    } catch (e: Exception) {
-                        Log.e("ModelHandler", "Failed to add image: ${e.message}")
-                        return "Error: Image input not supported by this model."
+            return LlmInferenceSession.createFromOptions(llmInference!!, sessionOptions)
+                .use { session ->
+                    session.addQueryChunk(appendedPrompt)
+                    if (enableVision) {
+                        try {
+                            val resizedImage = resizeToSupportedSize(imageBitmap!!)
+                            val mpImage: MPImage = BitmapImageBuilder(resizedImage).build()
+                            session.addImage(mpImage)
+                            Log.d("ModelHandler", "Image added successfully")
+                        } catch (e: Exception) {
+                            Log.e("ModelHandler", "Failed to add image: ${e.message}")
+                            return "Error: Image input not supported by this model."
+                        }
                     }
+                    val response = session.generateResponse()
+                    Log.d("ModelHandler", "Generated response: $response")
+                    response
                 }
-                val response = session.generateResponse()
-                Log.d("ModelHandler", "Generated response: $response")
-                response
-            }
         } catch (e: Exception) {
             Log.e("ModelHandler", "Inference failed: ${e.stackTraceToString()}")
             return null
@@ -309,7 +359,8 @@ class ModelHandler(private val context: Context) {
             bitmap.width >= 512 || bitmap.height >= 512 -> 512
             else -> 256
         }
-        return Bitmap.createScaledBitmap(bitmap, targetSize, targetSize, true).copy(Bitmap.Config.ARGB_8888, false)
+        return Bitmap.createScaledBitmap(bitmap, targetSize, targetSize, true)
+            .copy(Bitmap.Config.ARGB_8888, false)
     }
 
     // Close resources

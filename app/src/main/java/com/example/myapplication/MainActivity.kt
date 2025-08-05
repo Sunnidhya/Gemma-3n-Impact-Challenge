@@ -77,7 +77,7 @@ class MainActivity : ComponentActivity() {
                             ),
                             title = {
                                 Text(
-                                    text = "MediGem - AI Diagnosis",
+                                    text = "MediGemm - AI Diagnosis",
                                     color = Color.White,
                                     fontSize = 18.sp,
 //                                    style = MaterialTheme.typography.displaySmall,
@@ -317,7 +317,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    
+
 
     private suspend fun extractModelFromAssets(updateProgress: (String) -> Unit) {
         val compressedFile = File(filesDir, "gemma-3n-E2B-it-int4.zip")
