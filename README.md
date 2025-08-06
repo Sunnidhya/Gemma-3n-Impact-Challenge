@@ -3,7 +3,7 @@ MediGemm is an offline, multimodal Android application designed to deliver preli
 
 The app integrates a compressed 4-bit quantized version of Gemma-3n and the Universal Sentence Encoder for embedding-based Retrieval-Augmented Generation (RAG). Upon user input, MediGemm identifies the most relevant disease using cosine similarity over precomputed embeddings and augments the query with structured context before passing it to the model. This ensures domain-restricted, contextually accurate medical responses.
 
-Key Features:
+**Key Features:**
 <ol><li>Offline Capability: Entire model and database stored and loaded from device storage; first-launch decompression handled dynamically.</li>
  <li>Multimodal Input: Accepts and processes both text and images (e.g., for visible conditions like skin rashes).
 </li> 
@@ -13,23 +13,40 @@ Key Features:
 </li>
 </ol>
 
-Challenges Overcome:
-Efficient handling of a ~3GB model through on-device ZIP extraction.
+**Challenges Overcome:**
+<ol><li>
+ Efficient handling of a ~3GB model through on-device ZIP extraction.
+</li>
+<li>Inference speedup via parameter tuning and resource-aware design (e.g., CPU backend).</li>
+ <li>Managing memory and storage constraints on consumer devices.</li>
+ <li>Embedding generation and caching for RAG accuracy and efficiency.</li>
+</ol>
 
-Inference speedup via parameter tuning and resource-aware design (e.g., CPU backend).
+**Future Scope Includes:**
 
-Managing memory and storage constraints on consumer devices.
+<ol><li>Fine-tuning the model on domain-specific medical data. </li>
+<li>Adding rare diseases and more languages</li>
+<li>Exploring LoRA and 2-bit quantization for faster and smaller deployments.</li>
+ <li>Integrating user feedback for continual improvement.</li>
+</ol>
 
-Embedding generation and caching for RAG accuracy and efficiency.
+**MediGemm demonstrates how cutting-edge on-device AI can deliver critical healthcare support in connectivity-challenged environments.**
 
-Future Scope Includes:
+**Steps to build the app**
+<ol><li>Clone the repository </li>
+<li>Copy the assets folder from the google drive link containing the documents, gemma model and universal sentence encoder model</li>
+<li>Build the project</li>
+ <li>Run and enjoy the app</li>
+</ol>
 
-1.Fine-tuning the model on domain-specific medical data.
+**Google drive link:** https://drive.google.com/drive/folders/1nfgm73DJgyPZ3wD4x8NZhKXJicTriLkw?usp=sharing
+**Youtube Link for the demo:** https://www.youtube.com/watch?v=OHfFLOsTVAw
 
-Adding rare diseases and more languages.
-
-Exploring LoRA and 2-bit quantization for faster and smaller deployments.
-
-Integrating user feedback for continual improvement.
-
-MediGemm demonstrates how cutting-edge on-device AI can deliver critical healthcare support in connectivity-challenged environments.
+**Citation**
+@misc{google-gemma-3n-hackathon,
+    author = {Glenn Cameron and Omar Sanseviero and Gus Martins and Ian Ballantyne and Kat Black and Mark Sherwood and Milen Ferev and Ronghui Zhu and Nilay Chauhan and Pulkit Bhuwalka and Emily Kosa and Addison Howard},
+    title = {Google - The Gemma 3n Impact Challenge},
+    year = {2025},
+    howpublished = {\url{https://kaggle.com/competitions/google-gemma-3n-hackathon}},
+    note = {Kaggle}
+}
