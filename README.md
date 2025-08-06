@@ -42,7 +42,7 @@ The app integrates a compressed 4-bit quantized version of Gemma-3n and the Univ
 **Google drive link:** https://drive.google.com/drive/folders/1nfgm73DJgyPZ3wD4x8NZhKXJicTriLkw?usp=sharing <br>
 **Youtube Link for the demo:** https://www.youtube.com/watch?v=OHfFLOsTVAw
 
-**Citation**
+**Citation:** <br>
 @misc{google-gemma-3n-hackathon,
     author = {Glenn Cameron and Omar Sanseviero and Gus Martins and Ian Ballantyne and Kat Black and Mark Sherwood and Milen Ferev and Ronghui Zhu and Nilay Chauhan and Pulkit Bhuwalka and Emily Kosa and Addison Howard},
     title = {Google - The Gemma 3n Impact Challenge},
