@@ -39,7 +39,7 @@ The app integrates a compressed 4-bit quantized version of Gemma-3n and the Univ
  <li>Run and enjoy the app</li>
 </ol>
 
-**Google drive link:** https://drive.google.com/drive/folders/1nfgm73DJgyPZ3wD4x8NZhKXJicTriLkw?usp=sharing
+**Google drive link:** https://drive.google.com/drive/folders/1nfgm73DJgyPZ3wD4x8NZhKXJicTriLkw?usp=sharing <br>
 **Youtube Link for the demo:** https://www.youtube.com/watch?v=OHfFLOsTVAw
 
 **Citation**
